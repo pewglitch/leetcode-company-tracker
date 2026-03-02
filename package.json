@@ -1,0 +1,22 @@
+{
+  "name": "leetcode-company-tracker",
+  "version": "1.0.0",
+  "description": "LeetCode company-wise progress tracker (Node + vanilla JS)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "leetcode",
+    "company",
+    "tracker",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2",
+    "node-fetch": "^3.3.2"
+  }
+}
