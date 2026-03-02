@@ -1,0 +1,251 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: radial-gradient(circle at top left, #0f172a, #020617);
+  color: #e5e7eb;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 960px;
+  padding: 24px 20px 32px;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.9rem;
+}
+
+.subtitle {
+  margin-top: 8px;
+  color: #9ca3af;
+  font-size: 0.95rem;
+}
+
+.controls {
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 14px;
+  padding: 16px 18px 14px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.field-label {
+  display: block;
+  font-size: 0.85rem;
+  color: #9ca3af;
+  margin-bottom: 6px;
+}
+
+.input-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+input#username {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: rgba(15, 23, 42, 0.9);
+  color: #f9fafb;
+  outline: none;
+  font-size: 0.95rem;
+}
+
+input#username::placeholder {
+  color: #6b7280;
+}
+
+input#username:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+}
+
+.company-controls {
+  margin-top: 14px;
+}
+
+input#company-filter,
+select#company-select,
+select#difficulty-select {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 9px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: rgba(15, 23, 42, 0.9);
+  color: #f9fafb;
+  outline: none;
+  font-size: 0.9rem;
+}
+
+input#company-filter::placeholder {
+  color: #6b7280;
+}
+
+input#company-filter:focus,
+select#company-select:focus,
+select#difficulty-select:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+}
+
+button#check-btn {
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #ecfdf5;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 12px 25px rgba(22, 163, 74, 0.6);
+  transition: transform 0.07s ease, box-shadow 0.07s ease, filter 0.07s ease;
+}
+
+button#check-btn:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 16px 30px rgba(22, 163, 74, 0.7);
+}
+
+button#check-btn:active {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: 0 10px 18px rgba(22, 163, 74, 0.5);
+}
+
+.status-text {
+  margin: 8px 2px 0;
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.status-text.error {
+  color: #fecaca;
+}
+
+.status-text.success {
+  color: #bbf7d0;
+}
+
+.results {
+  margin-top: 20px;
+}
+
+.company-card {
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 14px;
+  padding: 14px 14px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  margin-bottom: 10px;
+}
+
+.company-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.company-name {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.company-meta {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.problems-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.problems-table th,
+.problems-table td {
+  padding: 4px 6px;
+}
+
+.problems-table thead {
+  color: #9ca3af;
+}
+
+.problems-table tbody tr:nth-child(odd) {
+  background-color: rgba(15, 23, 42, 0.85);
+}
+
+.problems-table tbody tr:nth-child(even) {
+  background-color: rgba(15, 23, 42, 0.7);
+}
+
+.status-badge {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.status-badge.solved {
+  color: #4ade80;
+}
+
+.status-badge.unsolved {
+  color: #fca5a5;
+}
+
+.difficulty-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.difficulty-easy {
+  background: rgba(34, 197, 94, 0.15);
+  color: #bbf7d0;
+}
+
+.difficulty-medium {
+  background: rgba(234, 179, 8, 0.18);
+  color: #facc15;
+}
+
+.difficulty-hard {
+  background: rgba(239, 68, 68, 0.20);
+  color: #fecaca;
+}
+
+.link {
+  color: #38bdf8;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .problems-table th:nth-child(3),
+  .problems-table td:nth-child(3) {
+    display: none;
+  }
+}
+

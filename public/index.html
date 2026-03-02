@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>LeetCode Company Progress Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <header class="app-header">
+        <h1>LeetCode Company Progress</h1>
+        <p class="subtitle">
+          Enter your LeetCode username to see which company-tagged problems you’ve solved.
+        </p>
+      </header>
+
+      <section class="controls">
+        <label for="username" class="field-label">LeetCode Username</label>
+        <div class="input-row">
+          <input
+            id="username"
+            type="text"
+            placeholder="e.g. shivam123"
+            autocomplete="off"
+          />
+          <button id="check-btn">Check Progress</button>
+        </div>
+        <p id="status" class="status-text"></p>
+
+        <div class="company-controls">
+          <label for="company-filter" class="field-label">Filter Companies</label>
+          <input
+            id="company-filter"
+            type="text"
+            placeholder="e.g. Google, Amazon"
+            autocomplete="off"
+          />
+
+          <label for="company-select" class="field-label" style="margin-top:10px;">
+            Select Company
+          </label>
+          <select id="company-select" disabled>
+            <option value="">Run a check first</option>
+          </select>
+
+          <label for="difficulty-select" class="field-label" style="margin-top:10px;">
+            Difficulty
+          </label>
+          <select id="difficulty-select" disabled>
+            <option value="all">All difficulties</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="results">
+        <div id="results-container"></div>
+      </section>
+    </div>
+
+    <script src="main.js"></script>
+  </body>
+</html>
+
