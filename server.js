@@ -12,12 +12,18 @@ app.use(express.json());
 // Serve static frontend from /public
 app.use(express.static(path.join(__dirname, 'public')));
 
+/** Normalize slug for consistent matching (lowercase, trim). */
+function normalizeSlug(s) {
+  return typeof s === 'string' ? s.trim().toLowerCase() : '';
+}
+
 /**
  * POST /api/solved
  * Body: { username: "leetcodeUsername" }
  * Response: { solved: ["two-sum", "reverse-linked-list", ...] }
  *
- * Uses LeetCode GraphQL recentAcSubmissionList as a practical prototype.
+ * Uses LeetCode GraphQL recentAcSubmissionList (most recent accepted submissions).
+ * LeetCode may cap how many are returned; solved status is only from this recent list.
  */
 app.post('/api/solved', async (req, res) => {
   const { username } = req.body || {};
@@ -28,7 +34,7 @@ app.post('/api/solved', async (req, res) => {
 
   const graphQLQuery = `
     query recentAcSubmissions($username: String!) {
-      recentAcSubmissionList(username: $username, limit: 1000) {
+      recentAcSubmissionList(username: $username, limit: 5000) {
         titleSlug
       }
     }
@@ -62,7 +68,8 @@ app.post('/api/solved', async (req, res) => {
     const solvedSet = new Set();
     for (const item of list) {
       if (item && typeof item.titleSlug === 'string') {
-        solvedSet.add(item.titleSlug);
+        const slug = normalizeSlug(item.titleSlug);
+        if (slug) solvedSet.add(slug);
       }
     }
 
@@ -81,4 +88,5 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
   console.log(`LeetCode Company Tracker server listening on http://localhost:${PORT}`);
 });
+
 
