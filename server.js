@@ -28,7 +28,7 @@ app.post('/api/solved', async (req, res) => {
 
   const graphQLQuery = `
     query recentAcSubmissions($username: String!) {
-      recentAcSubmissionList(username: $username, limit: 500) {
+      recentAcSubmissionList(username: $username, limit: 1000) {
         titleSlug
       }
     }
