@@ -137,11 +137,15 @@ function buildAllCompaniesAggregate() {
   };
 }
 
+function normalizeSlug(s) {
+  return typeof s === 'string' ? s.trim().toLowerCase() : '';
+}
+
 function renderResults(companies, solvedSlugs) {
   const container = document.getElementById('results-container');
   container.innerHTML = '';
 
-  const solvedSet = new Set(solvedSlugs);
+  const solvedSet = new Set((solvedSlugs || []).map(normalizeSlug));
 
   companies.forEach((company) => {
     const card = document.createElement('div');
@@ -160,7 +164,7 @@ function renderResults(companies, solvedSlugs) {
       if (currentDifficulty === 'all') return true;
       return p.difficulty && p.difficulty.toLowerCase() === currentDifficulty;
     });
-    const solvedCount = visibleProblems.filter((p) => solvedSet.has(p.slug)).length;
+    const solvedCount = visibleProblems.filter((p) => solvedSet.has(normalizeSlug(p.slug))).length;
     metaEl.textContent = `${solvedCount}/${visibleProblems.length} solved`;
 
     header.appendChild(nameEl);
@@ -185,7 +189,7 @@ function renderResults(companies, solvedSlugs) {
     visibleProblems.forEach((p) => {
       const tr = document.createElement('tr');
 
-      const isSolved = solvedSet.has(p.slug);
+      const isSolved = solvedSet.has(normalizeSlug(p.slug));
       const statusCell = document.createElement('td');
       statusCell.innerHTML = `<span class="status-badge ${
         isSolved ? 'solved' : 'unsolved'
@@ -379,4 +383,6 @@ window.addEventListener('DOMContentLoaded', () => {
     renderSelectedCompany();
   });
 });
+
+
 
