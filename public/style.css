@@ -37,6 +37,86 @@ body {
   font-size: 0.95rem;
 }
 
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-top: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 20px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab:hover {
+  color: #e5e7eb;
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.tab.active {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+}
+
+.panel {
+  display: none;
+  margin-top: 20px;
+}
+
+.panel.active {
+  display: block;
+}
+
+.codechef-controls .input-row {
+  flex-wrap: wrap;
+}
+
+#codechef-refresh-btn {
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+#codechef-refresh-btn:hover:not(:disabled) {
+  background: rgba(251, 146, 60, 0.25);
+}
+
+#codechef-refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#codechef-load-btn {
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #ecfdf5;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.codechef-card .company-name {
+  text-transform: none;
+}
+
 .controls {
   background: rgba(15, 23, 42, 0.9);
   border-radius: 14px;

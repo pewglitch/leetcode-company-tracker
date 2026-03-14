@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const codechef = require('./codechef-scraper');
 
 // For Node 18+ fetch is built-in; for older versions you can uncomment:
 // const fetch = (...args) => import('node-fetch').then(({ default: fetchFn }) => fetchFn(...args));
@@ -77,6 +78,34 @@ app.post('/api/solved', async (req, res) => {
   } catch (err) {
     console.error('Error calling LeetCode GraphQL:', err);
     res.status(500).json({ error: 'Internal server error while fetching from LeetCode' });
+  }
+});
+
+/**
+ * GET /api/codechef/problems
+ * Returns cached CodeChef problems (rating-wise from past contests). If no cache, returns empty.
+ */
+app.get('/api/codechef/problems', (req, res) => {
+  const cached = codechef.loadCache();
+  if (cached) {
+    return res.json(cached);
+  }
+  res.json({ problems: [], updatedAt: null });
+});
+
+/**
+ * POST /api/codechef/refresh
+ * Triggers full scrape (contest list → problems → metadata), then returns new data.
+ * Can take a minute; optional body: { contestLimit?: number, delayMs?: number }
+ */
+app.post('/api/codechef/refresh', async (req, res) => {
+  const { contestLimit = 8, delayMs = 800 } = req.body || {};
+  try {
+    const result = await codechef.scrapeAll({ contestLimit: Number(contestLimit) || 8, delayMs: Number(delayMs) || 800 });
+    res.json(result);
+  } catch (err) {
+    console.error('CodeChef scrape error:', err);
+    res.status(500).json({ error: err.message || 'Scrape failed' });
   }
 });
 

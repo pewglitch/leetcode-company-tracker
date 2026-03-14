@@ -2,68 +2,101 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>LeetCode Company Progress Tracker</title>
+    <title>LeetCode & CodeChef Progress Tracker</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="app-container">
       <header class="app-header">
-        <h1>LeetCode Company Progress</h1>
+        <h1>CP Progress Tracker</h1>
         <p class="subtitle">
-          Enter your LeetCode username to see which company-tagged problems you’ve solved.
+          LeetCode company-wise progress and CodeChef rating-wise problems from past contests.
         </p>
+        <div class="tabs">
+          <button type="button" class="tab active" data-tab="leetcode">LeetCode</button>
+          <button type="button" class="tab" data-tab="codechef">CodeChef</button>
+        </div>
       </header>
 
-      <section class="controls">
-        <label for="username" class="field-label">LeetCode Username</label>
-        <div class="input-row">
-          <input
-            id="username"
-            type="text"
-            placeholder="e.g. shivam123"
-            autocomplete="off"
-          />
-          <button id="check-btn">Check Progress</button>
+      <!-- LeetCode panel -->
+      <section id="panel-leetcode" class="panel active">
+        <div class="controls">
+          <label for="username" class="field-label">LeetCode Username</label>
+          <div class="input-row">
+            <input
+              id="username"
+              type="text"
+              placeholder="e.g. shivam123"
+              autocomplete="off"
+            />
+            <button id="check-btn">Check Progress</button>
+          </div>
+          <p id="status" class="status-text"></p>
+          <p class="status-text hint">Solved status is based on your most recent accepted submissions from LeetCode (up to 5,000). Older solves may not show as ✔.</p>
+
+          <div class="company-controls">
+            <label for="company-filter" class="field-label">Filter Companies</label>
+            <input
+              id="company-filter"
+              type="text"
+              placeholder="e.g. Google, Amazon"
+              autocomplete="off"
+            />
+
+            <label for="company-select" class="field-label" style="margin-top:10px;">
+              Select Company
+            </label>
+            <select id="company-select" disabled>
+              <option value="">Run a check first</option>
+            </select>
+
+            <label for="difficulty-select" class="field-label" style="margin-top:10px;">
+              Difficulty
+            </label>
+            <select id="difficulty-select" disabled>
+              <option value="all">All difficulties</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
         </div>
-        <p id="status" class="status-text"></p>
-        <p class="status-text hint">Solved status is based on your most recent accepted submissions from LeetCode (up to 5,000). Older solves may not show as ✔.</p>
 
-        <div class="company-controls">
-          <label for="company-filter" class="field-label">Filter Companies</label>
-          <input
-            id="company-filter"
-            type="text"
-            placeholder="e.g. Google, Amazon"
-            autocomplete="off"
-          />
-
-          <label for="company-select" class="field-label" style="margin-top:10px;">
-            Select Company
-          </label>
-          <select id="company-select" disabled>
-            <option value="">Run a check first</option>
-          </select>
-
-          <label for="difficulty-select" class="field-label" style="margin-top:10px;">
-            Difficulty
-          </label>
-          <select id="difficulty-select" disabled>
-            <option value="all">All difficulties</option>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
+        <section class="results">
+          <div id="results-container"></div>
+        </section>
       </section>
 
-      <section class="results">
-        <div id="results-container"></div>
+      <!-- CodeChef panel -->
+      <section id="panel-codechef" class="panel">
+        <div class="controls codechef-controls">
+          <p class="field-label">Rating-wise problems from past contests</p>
+          <div class="input-row">
+            <button id="codechef-load-btn">Load problems</button>
+            <button id="codechef-refresh-btn" type="button" title="Scrape contests & problems (may take 1–2 min)">Refresh data</button>
+          </div>
+          <p id="codechef-status" class="status-text"></p>
+          <label for="codechef-rating-filter" class="field-label" style="margin-top:10px;">Filter by rating</label>
+          <select id="codechef-rating-filter">
+            <option value="all">All ratings</option>
+            <option value="0-1000">0 – 1000</option>
+            <option value="1000-1200">1000 – 1200</option>
+            <option value="1200-1400">1200 – 1400</option>
+            <option value="1400-1600">1400 – 1600</option>
+            <option value="1600-1800">1600 – 1800</option>
+            <option value="1800-2000">1800 – 2000</option>
+            <option value="2000+">2000+</option>
+            <option value="unrated">Unrated</option>
+          </select>
+        </div>
+
+        <section class="results">
+          <div id="codechef-results-container"></div>
+        </section>
       </section>
     </div>
 
     <script src="main.js"></script>
   </body>
 </html>
-
-

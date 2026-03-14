@@ -3,6 +3,11 @@ let lastSolvedSlugs = [];
 let currentDifficulty = 'all';
 const ALL_COMPANIES_KEY = '__ALL__';
 
+// CodeChef state
+let codechefProblems = [];
+let codechefRatingFilter = 'all';
+let codechefUpdatedAt = null;
+
 async function fetchSolved(username) {
   const response = await fetch('/api/solved', {
     method: 'POST',
@@ -114,6 +119,12 @@ function setStatus(message, type = '') {
   const statusEl = document.getElementById('status');
   statusEl.textContent = message;
   statusEl.className = `status-text${type ? ' ' + type : ''}`;
+}
+
+function setCodechefStatus(message, type = '') {
+  const el = document.getElementById('codechef-status');
+  el.textContent = message;
+  el.className = `status-text${type ? ' ' + type : ''}`;
 }
 
 function buildAllCompaniesAggregate() {
@@ -356,7 +367,160 @@ async function handleCheck() {
   }
 }
 
+// --- CodeChef ---
+
+function getRatingBucket(rating) {
+  if (rating == null || typeof rating !== 'number') return 'unrated';
+  if (rating < 1000) return '0-1000';
+  if (rating < 1200) return '1000-1200';
+  if (rating < 1400) return '1200-1400';
+  if (rating < 1600) return '1400-1600';
+  if (rating < 1800) return '1600-1800';
+  if (rating < 2000) return '1800-2000';
+  return '2000+';
+}
+
+function groupCodechefByRating(problems) {
+  const buckets = {
+    '0-1000': [],
+    '1000-1200': [],
+    '1200-1400': [],
+    '1400-1600': [],
+    '1600-1800': [],
+    '1800-2000': [],
+    '2000+': [],
+    unrated: [],
+  };
+  (problems || []).forEach((p) => {
+    const bucket = getRatingBucket(p.rating);
+    buckets[bucket].push(p);
+  });
+  return buckets;
+}
+
+function renderCodechefResults() {
+  const container = document.getElementById('codechef-results-container');
+  container.innerHTML = '';
+
+  let list = codechefProblems;
+  if (codechefRatingFilter !== 'all') {
+    list = list.filter((p) => getRatingBucket(p.rating) === codechefRatingFilter);
+  }
+
+  const buckets = groupCodechefByRating(list);
+  const order = ['0-1000', '1000-1200', '1200-1400', '1400-1600', '1600-1800', '1800-2000', '2000+', 'unrated'];
+
+  order.forEach((key) => {
+    const problems = buckets[key];
+    if (!problems.length) return;
+
+    const card = document.createElement('div');
+    card.className = 'company-card codechef-card';
+    const header = document.createElement('div');
+    header.className = 'company-header';
+    header.innerHTML = `<span class="company-name">Rating: ${key}</span><span class="company-meta">${problems.length} problems</span>`;
+    card.appendChild(header);
+
+    const table = document.createElement('table');
+    table.className = 'problems-table';
+    table.innerHTML = `
+      <thead><tr><th>Code</th><th>Title</th><th>Contest</th><th>Rating</th></tr></thead>
+      <tbody></tbody>
+    `;
+    const tbody = table.querySelector('tbody');
+    problems.forEach((p) => {
+      const tr = document.createElement('tr');
+      const codeCell = document.createElement('td');
+      const link = document.createElement('a');
+      link.className = 'link';
+      link.href = p.link || `https://www.codechef.com/problems/${p.problemCode}`;
+      link.target = '_blank';
+      link.rel = 'noreferrer noopener';
+      link.textContent = p.problemCode || p.title;
+      codeCell.appendChild(link);
+      const titleCell = document.createElement('td');
+      titleCell.textContent = p.title || p.problemCode;
+      const contestCell = document.createElement('td');
+      contestCell.textContent = p.contestCode || '—';
+      const ratingCell = document.createElement('td');
+      ratingCell.textContent = p.rating != null ? p.rating : '—';
+      tr.appendChild(codeCell);
+      tr.appendChild(titleCell);
+      tr.appendChild(contestCell);
+      tr.appendChild(ratingCell);
+      tbody.appendChild(tr);
+    });
+    card.appendChild(table);
+    container.appendChild(card);
+  });
+}
+
+async function loadCodechefProblems() {
+  setCodechefStatus('Loading…');
+  try {
+    const res = await fetch('/api/codechef/problems');
+    const data = await res.json();
+    codechefProblems = Array.isArray(data.problems) ? data.problems : [];
+    codechefUpdatedAt = data.updatedAt || null;
+    if (codechefProblems.length) {
+      setCodechefStatus(
+        codechefUpdatedAt ? `Loaded ${codechefProblems.length} problems (cached ${new Date(codechefUpdatedAt).toLocaleString()}).` : `Loaded ${codechefProblems.length} problems.`,
+        'success'
+      );
+      renderCodechefResults();
+    } else {
+      setCodechefStatus('No cached data. Click "Refresh data" to scrape past contests (may take 1–2 min).', '');
+      document.getElementById('codechef-results-container').innerHTML = '';
+    }
+  } catch (err) {
+    setCodechefStatus(err.message || 'Failed to load.', 'error');
+  }
+}
+
+async function refreshCodechefData() {
+  const btn = document.getElementById('codechef-refresh-btn');
+  btn.disabled = true;
+  setCodechefStatus('Scraping contests and problems… This may take 1–2 minutes.');
+  try {
+    const res = await fetch('/api/codechef/refresh', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ contestLimit: 8, delayMs: 800 }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Refresh failed');
+    codechefProblems = Array.isArray(data.problems) ? data.problems : [];
+    codechefUpdatedAt = data.updatedAt || null;
+    setCodechefStatus(`Done. Loaded ${codechefProblems.length} problems.`, 'success');
+    renderCodechefResults();
+  } catch (err) {
+    setCodechefStatus(err.message || 'Refresh failed.', 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// --- Tabs ---
+function switchTab(tabName) {
+  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === tabName));
+  document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('active', p.id === `panel-${tabName}`));
+}
+
 window.addEventListener('DOMContentLoaded', () => {
+  // Tab switching
+  document.querySelectorAll('.tab').forEach((t) => {
+    t.addEventListener('click', () => switchTab(t.dataset.tab));
+  });
+
+  // CodeChef
+  document.getElementById('codechef-load-btn').addEventListener('click', loadCodechefProblems);
+  document.getElementById('codechef-refresh-btn').addEventListener('click', refreshCodechefData);
+  document.getElementById('codechef-rating-filter').addEventListener('change', (e) => {
+    codechefRatingFilter = e.target.value || 'all';
+    renderCodechefResults();
+  });
+
+  // LeetCode
   const btn = document.getElementById('check-btn');
   const input = document.getElementById('username');
   const companyFilter = document.getElementById('company-filter');
