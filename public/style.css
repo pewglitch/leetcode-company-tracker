@@ -145,6 +145,12 @@ button#check-btn:active {
   color: #bbf7d0;
 }
 
+.status-text.hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
 .results {
   margin-top: 20px;
 }
@@ -248,4 +254,5 @@ button#check-btn:active {
     display: none;
   }
 }
+
 
