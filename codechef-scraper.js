@@ -1,11 +1,10 @@
 /**
- * CodeChef scraper: contest list → problem codes → problem pages for rating + metadata.
- * Uses cache file to avoid repeated scraping. Set USER_AGENT to avoid blocks.
+ * CodeChef data: uses official API (contest list → division contests → problems).
+ * Rating is inferred from division when available. Results cached to avoid repeated calls.
  */
 
 const fs = require('fs');
 const path = require('path');
-const { load } = require('cheerio');
 
 const CACHE_PATH = path.join(__dirname, 'codechef-problems.json');
 const BASE = 'https://www.codechef.com';
@@ -16,140 +15,138 @@ const defaultFetchOptions = {
   redirect: 'follow',
 };
 
-/** Fetch HTML and return text */
-async function fetchHtml(url) {
+/** Fetch JSON from CodeChef API */
+async function fetchJson(url) {
   const res = await fetch(url, defaultFetchOptions);
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
-  return res.text();
+  return res.json();
 }
 
-// Fallback past contest codes if contests page is client-rendered (CodeChef often uses React)
+// Division → approximate rating (middle of band). CodeChef: Div 4 (0–1399), Div 3 (1400–1599), Div 2 (1600–1999), Div 1 (2000+)
+const DIVISION_RATING = {
+  div_4: 1200,
+  div_3: 1500,
+  div_2: 1800,
+  div_1: 2200,
+};
+
+// Past contest codes (parent or division). API returns problems from division contests.
 const FALLBACK_CONTEST_CODES = [
-  'START139', 'START138', 'START137', 'LTIME119', 'LTIME118', 'COOK158', 'COOK157',
-  'START136', 'LTIME117', 'COOK156', 'START135', 'COOK155', 'LTIME116',
+  'START139', 'START138', 'START137', 'START136', 'START135',
+  'LTIME119', 'LTIME118', 'LTIME117', 'LTIME116',
+  'COOK158', 'COOK157', 'COOK156', 'COOK155',
 ];
 
 /**
- * Parse contests page: extract past contest codes.
- * CodeChef contests page may be client-rendered; we try to parse links and fall back to a fixed list.
+ * Get list of contest codes to process (parent codes like START139, LTIME119).
  */
-async function scrapeContestList(limit = 15) {
-  const codes = new Set(FALLBACK_CONTEST_CODES);
-  try {
-    const html = await fetchHtml(`${BASE}/contests`);
-    const $ = load(html);
-    $('a[href^="/"]').each((_, el) => {
-      const href = $(el).attr('href') || '';
-      const match = href.match(/^\/([A-Z0-9_]+)\/?$/);
-      if (match) {
-        const code = match[1];
-        if (!['contests', 'problems', 'users', 'api', 'wiki', 'discuss', 'ide', 'ratings'].includes(code)) {
-          codes.add(code);
-        }
-      }
+function getContestList(limit = 15) {
+  return FALLBACK_CONTEST_CODES.slice(0, limit);
+}
+
+/**
+ * Fetch contest details from API. Returns { child_contests?, problems? }.
+ */
+async function fetchContest(contestCode) {
+  const url = `${BASE}/api/contests/${contestCode}`;
+  const data = await fetchJson(url);
+  if (data.status !== 'success') throw new Error(data.message || 'Contest fetch failed');
+  return data;
+}
+
+/**
+ * Extract problems from contest API response and optional division for rating.
+ * problems is object: { CODE: { code, name, problem_url }, ... }
+ */
+function problemsFromContestResponse(data, contestCode, divisionRating = null) {
+  const problems = data.problems;
+  if (!problems || typeof problems !== 'object') return [];
+  const list = [];
+  for (const key of Object.keys(problems)) {
+    const p = problems[key];
+    if (!p || !p.code) continue;
+    const link = p.problem_url ? `${BASE}${p.problem_url}` : `${BASE}/problems/${p.code}`;
+    list.push({
+      problemCode: p.code,
+      title: p.name || p.code,
+      link,
+      rating: divisionRating,
+      contestCode,
     });
-    $('a[href*="/"]').each((_, el) => {
-      const href = $(el).attr('href') || '';
-      const m = href.match(/codechef\.com\/([A-Z0-9_]+)/);
-      if (m) {
-        const code = m[1];
-        if (!['contests', 'problems', 'users', 'api', 'wiki', 'discuss', 'ide', 'ratings', 'practice'].includes(code)) {
-          codes.add(code);
-        }
-      }
-    });
-  } catch (e) {
-    console.warn('Contests page fetch failed, using fallback list:', e.message);
   }
-  let list = Array.from(codes).filter((c) => /^[A-Z0-9_]{3,}$/.test(c));
-  list = list.slice(0, limit);
   return list;
 }
 
 /**
- * From a contest page, extract problem codes (links to /problems/CODE or /CONTEST/problems/CODE).
+ * Fetch all problems from a contest: if parent has child_contests, fetch each division;
+ * otherwise use contest's problems directly.
  */
-async function scrapeProblemCodesFromContest(contestCode) {
-  const url = `${BASE}/${contestCode}`;
-  const html = await fetchHtml(url);
-  const $ = load(html);
-  const codes = new Set();
-
-  $('a[href*="/problems/"]').each((_, el) => {
-    const href = $(el).attr('href') || '';
-    const match = href.match(/\/problems\/([A-Z0-9_]+)/);
-    if (match) codes.add(match[1]);
-  });
-
-  return Array.from(codes);
-}
-
-/**
- * From a problem page, extract rating and title.
- * Rating often appears as "Rating: 1500" or in a data attribute / script.
- */
-async function scrapeProblemMetadata(problemCode) {
-  const url = `${BASE}/problems/${problemCode}`;
-  const html = await fetchHtml(url);
-  const $ = load(html);
-
-  let rating = null;
-  let title = problemCode;
-
-  // Title: often in h1 or breadcrumb
-  const h1 = $('h1').first().text().trim();
-  if (h1) title = h1;
-
-  // Rating: look for text like "Rating: 1500" or "Rated for Div 2"
-  const bodyText = $('body').text();
-  const ratingMatch = bodyText.match(/Rating[:\s]*(\d+)/i) || bodyText.match(/Rated\s+for\s+(\d+)/i);
-  if (ratingMatch) rating = parseInt(ratingMatch[1], 10);
-
-  // Alternative: meta or data attributes
-  if (rating == null) {
-    $('[data-rating], [data-difficulty]').each((_, el) => {
-      const r = $(el).attr('data-rating') || $(el).attr('data-difficulty');
-      if (r && /^\d+$/.test(r)) rating = parseInt(r, 10);
-    });
-  }
-
-  return { problemCode, title, rating, link: url };
-}
-
-/**
- * Full pipeline: get contest list, then for each contest get problems, then for each problem get metadata.
- * Deduplicates by problem code and caches result.
- */
-async function scrapeAll(options = {}) {
-  const { contestLimit = 8, delayMs = 800 } = options;
+async function fetchProblemsFromContest(contestCode, delayMs = 300) {
   const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+  const data = await fetchContest(contestCode);
+  const collected = [];
+  const seen = new Set();
 
-  const contestCodes = await scrapeContestList(contestLimit);
-  const problemCodeToMeta = new Map();
-
-  for (const contestCode of contestCodes) {
-    await delay(delayMs);
-    let codes = [];
-    try {
-      codes = await scrapeProblemCodesFromContest(contestCode);
-    } catch (e) {
-      console.warn(`Contest ${contestCode}: ${e.message}`);
-      continue;
-    }
-    for (const code of codes) {
-      if (problemCodeToMeta.has(code)) continue;
+  if (data.child_contests && typeof data.child_contests === 'object') {
+    const children = data.child_contests;
+    for (const divKey of ['div_1', 'div_2', 'div_3', 'div_4']) {
+      const child = children[divKey];
+      if (!child || !child.contest_code) continue;
       await delay(delayMs);
+      let childData;
       try {
-        const meta = await scrapeProblemMetadata(code);
-        problemCodeToMeta.set(code, { ...meta, contestCode: contestCode });
+        childData = await fetchContest(child.contest_code);
       } catch (e) {
-        console.warn(`Problem ${code}: ${e.message}`);
+        console.warn(`  ${child.contest_code}: ${e.message}`);
+        continue;
+      }
+      const rating = DIVISION_RATING[divKey] ?? null;
+      const list = problemsFromContestResponse(childData, child.contest_code, rating);
+      for (const p of list) {
+        if (!seen.has(p.problemCode)) {
+          seen.add(p.problemCode);
+          collected.push(p);
+        }
+      }
+    }
+  } else if (data.problems && typeof data.problems === 'object') {
+    const list = problemsFromContestResponse(data, contestCode, null);
+    for (const p of list) {
+      if (!seen.has(p.problemCode)) {
+        seen.add(p.problemCode);
+        collected.push(p);
       }
     }
   }
 
-  const list = Array.from(problemCodeToMeta.values());
-  const result = { problems: list, updatedAt: new Date().toISOString() };
+  return collected;
+}
+
+/**
+ * Full pipeline: get contest list, for each contest fetch problems via API, dedupe by problem code, cache.
+ */
+async function scrapeAll(options = {}) {
+  const { contestLimit = 12, delayMs = 400 } = options;
+  const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+  const contestCodes = getContestList(contestLimit);
+  const problemByCode = new Map();
+
+  for (const contestCode of contestCodes) {
+    await delay(delayMs);
+    try {
+      const list = await fetchProblemsFromContest(contestCode, delayMs);
+      for (const p of list) {
+        if (!problemByCode.has(p.problemCode)) {
+          problemByCode.set(p.problemCode, p);
+        }
+      }
+    } catch (e) {
+      console.warn(`Contest ${contestCode}: ${e.message}`);
+    }
+  }
+
+  const problems = Array.from(problemByCode.values());
+  const result = { problems, updatedAt: new Date().toISOString() };
   try {
     fs.writeFileSync(CACHE_PATH, JSON.stringify(result, null, 2), 'utf8');
   } catch (e) {
@@ -158,7 +155,7 @@ async function scrapeAll(options = {}) {
   return result;
 }
 
-/** Load from cache if exists and return; otherwise return null */
+/** Load from cache if exists */
 function loadCache() {
   try {
     const raw = fs.readFileSync(CACHE_PATH, 'utf8');
@@ -171,7 +168,7 @@ function loadCache() {
 module.exports = {
   scrapeAll,
   loadCache,
-  scrapeContestList,
-  scrapeProblemCodesFromContest,
-  scrapeProblemMetadata,
+  getContestList,
+  fetchContest,
+  fetchProblemsFromContest,
 };
